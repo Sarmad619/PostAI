@@ -66,6 +66,30 @@ export default function App() {
     })
   }
 
+  // Token-level streaming (real-time tokens)
+  function handleGenerateTokenStream() {
+    setLoading(true)
+    setLinkedin('')
+    setXpost('')
+    setLog([])
+
+    const base = (import.meta.env.VITE_API_BASE_URL as string) || '/api'
+    const url = `${base}/generate/stream-tokens?prompt=${encodeURIComponent(prompt)}`
+    const es = new EventSource(url)
+
+    es.addEventListener('token', (e: any) => {
+      try {
+        const data = JSON.parse(e.data)
+        if (data.which === 'linkedin') setLinkedin(s=>s+data.token)
+        if (data.which === 'x') setXpost(s=>s+data.token)
+      } catch {}
+    })
+    es.addEventListener('linkedin_done', (e: any) => { try { const d = JSON.parse(e.data); setLinkedin(d.text || '') } catch {} })
+    es.addEventListener('x_done', (e: any) => { try { const d = JSON.parse(e.data); setXpost(d.text || '') } catch {} })
+    es.addEventListener('done', (e: any) => { try { const d = JSON.parse(e.data); setLinkedin(d.linkedin || ''); setXpost(d.x || '') } catch {} ; setLoading(false); es.close() })
+    es.addEventListener('error', (e: any) => { try { const d = JSON.parse(e.data); setLog(l=>[...l, { step: 'Error', message: d.message, timestamp: new Date().toISOString() }]) } catch {} ; setLoading(false); es.close() })
+  }
+
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -92,6 +116,8 @@ export default function App() {
               className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">{loading? 'Generating...' : 'Generate'}</button>
             <button onClick={handleGenerateStream} disabled={loading || !prompt}
               className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">Stream</button>
+            <button onClick={handleGenerateTokenStream} disabled={loading || !prompt}
+              className="px-4 py-2 bg-orange-600 text-white rounded disabled:opacity-50">Stream Tokens</button>
             <button onClick={()=>{ setPrompt(''); setLinkedin(''); setXpost(''); setLog([]) }}
               className="px-4 py-2 bg-gray-200 rounded">Reset</button>
           </div>
