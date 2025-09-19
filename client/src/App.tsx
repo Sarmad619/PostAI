@@ -72,22 +72,51 @@ export default function App() {
     setLinkedin('')
     setXpost('')
     setLog([])
-
     const base = (import.meta.env.VITE_API_BASE_URL as string) || '/api'
     const url = `${base}/generate/stream-tokens?prompt=${encodeURIComponent(prompt)}`
-    const es = new EventSource(url)
 
-    es.addEventListener('token', (e: any) => {
-      try {
-        const data = JSON.parse(e.data)
-        if (data.which === 'linkedin') setLinkedin(s=>s+data.token)
-        if (data.which === 'x') setXpost(s=>s+data.token)
-      } catch {}
-    })
-    es.addEventListener('linkedin_done', (e: any) => { try { const d = JSON.parse(e.data); setLinkedin(d.text || '') } catch {} })
-    es.addEventListener('x_done', (e: any) => { try { const d = JSON.parse(e.data); setXpost(d.text || '') } catch {} })
-    es.addEventListener('done', (e: any) => { try { const d = JSON.parse(e.data); setLinkedin(d.linkedin || ''); setXpost(d.x || '') } catch {} ; setLoading(false); es.close() })
-    es.addEventListener('error', (e: any) => { try { const d = JSON.parse(e.data); setLog(l=>[...l, { step: 'Error', message: d.message, timestamp: new Date().toISOString() }]) } catch {} ; setLoading(false); es.close() })
+    let attempts = 0
+    const maxAttempts = 5
+
+    const openStream = () => {
+      const es = new EventSource(url)
+
+      es.addEventListener('token', (e: any) => {
+        try {
+          const data = JSON.parse(e.data)
+          if (data.which === 'linkedin') setLinkedin(s=>s+data.token)
+          if (data.which === 'x') setXpost(s=>s+data.token)
+        } catch {}
+      })
+      es.addEventListener('linkedin_done', (e: any) => { try { const d = JSON.parse(e.data); setLinkedin(d.text || '') } catch {} })
+      es.addEventListener('x_done', (e: any) => { try { const d = JSON.parse(e.data); setXpost(d.text || '') } catch {} })
+      es.addEventListener('done', (e: any) => { try { const d = JSON.parse(e.data); setLinkedin(d.linkedin || ''); setXpost(d.x || '') } catch {} ; setLoading(false); es.close() })
+      es.addEventListener('error', async (e: any) => {
+        // attempt reconnect with backoff; if max attempts exceeded, fallback to batch fetch
+        attempts += 1
+        es.close()
+        if (attempts <= maxAttempts) {
+          const backoff = Math.min(30000, 500 * Math.pow(2, attempts))
+          setLog(l=>[...l, { step: 'Reconnect', message: `Stream error — reconnecting in ${backoff}ms (attempt ${attempts})`, timestamp: new Date().toISOString() }])
+          setTimeout(openStream, backoff)
+        } else {
+          setLog(l=>[...l, { step: 'Fallback', message: 'Stream failed repeatedly — fetching final result', timestamp: new Date().toISOString() }])
+          try {
+            const base2 = (import.meta.env.VITE_API_BASE_URL as string) || '/api'
+            const resp = await axios.post(`${base2}/generate`, { prompt })
+            setLinkedin(resp.data.linkedin)
+            setXpost(resp.data.x)
+            setLog(resp.data.log || [])
+          } catch (err: any) {
+            setLog(l=>[...l, { step: 'Error', message: err?.message || String(err), timestamp: new Date().toISOString() }])
+          } finally {
+            setLoading(false)
+          }
+        }
+      })
+    }
+
+    openStream()
   }
 
   const copy = async (text: string) => {
@@ -101,6 +130,20 @@ export default function App() {
       document.execCommand('copy')
       document.body.removeChild(el)
     }
+  }
+
+  // Simple, safe renderer: escape HTML, convert **bold** to <strong>, preserve line breaks
+  function escapeHtml(s: string) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function mdBoldToHtml(s: string) {
+    if (!s) return '';
+    const escaped = escapeHtml(s);
+    // Replace **bold** (non-greedy) with strong tags
+    const bolded = escaped.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>');
+    // Preserve line breaks
+    return bolded.replace(/\n/g, '<br/>');
   }
 
   return (
@@ -129,7 +172,11 @@ export default function App() {
               <h2 className="font-semibold">LinkedIn Post</h2>
               <button onClick={()=>copy(linkedin)} className="text-sm text-blue-600">Copy</button>
             </div>
-            <div className="mt-2 whitespace-pre-wrap text-sm text-gray-800">{linkedin || 'No output yet'}</div>
+            <div className="mt-2 text-sm text-gray-800">
+              {linkedin ? (
+                <div dangerouslySetInnerHTML={{ __html: mdBoldToHtml(linkedin) }} />
+              ) : 'No output yet'}
+            </div>
           </div>
 
           <div className="bg-white p-4 rounded shadow">
@@ -137,7 +184,11 @@ export default function App() {
               <h2 className="font-semibold">X / Twitter Post</h2>
               <button onClick={()=>copy(xpost)} className="text-sm text-blue-600">Copy</button>
             </div>
-            <div className="mt-2 whitespace-pre-wrap text-sm text-gray-800">{xpost || 'No output yet'}</div>
+            <div className="mt-2 text-sm text-gray-800">
+              {xpost ? (
+                <div dangerouslySetInnerHTML={{ __html: mdBoldToHtml(xpost) }} />
+              ) : 'No output yet'}
+            </div>
           </div>
         </div>
 

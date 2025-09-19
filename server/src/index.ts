@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { generatePosts, generateLinkedInText, generateXText } from "./agent";
+import { generatePosts, generateLinkedInText, generateXText, makeInstructions } from "./agent";
 import { webSearch } from "./websearch";
 import OpenAI from "openai";
 
@@ -179,14 +179,13 @@ app.get('/api/generate/stream-tokens', async (req: Request, res: Response) => {
 
   (async () => {
     try {
-      // compose prompts
-      const linkedinInstruction = `Write a professional LinkedIn post (250-300 words) with a clear structure, hashtags, and a call-to-action. Use the following context:\n${limitedSearch.map((r:any)=>r.title+": "+(r.snippet||'')).join('\n')}`;
-      const linkedinPrompt = `User prompt: ${prompt}\n\n${linkedinInstruction}`;
-      const linkedin = await streamTokensFor('linkedin', linkedinPrompt, 800);
+  // compose prompts using same instructions as the batch generator
+  const { system, linkedinInstruction, xInstruction } = makeInstructions(limitedSearch);
+  const linkedinPrompt = `User prompt: ${prompt}\n\n${linkedinInstruction}`;
+  const linkedin = await streamTokensFor('linkedin', linkedinPrompt, 800);
 
-      const xInstruction = `Write a casual X/Twitter post under 280 characters that summarizes the idea and includes one or two hashtags.`;
-      const xPrompt = `User prompt: ${prompt}\n\n${xInstruction}`;
-      const x = await streamTokensFor('x', xPrompt, 200);
+  const xPrompt = `User prompt: ${prompt}\n\n${xInstruction}`;
+  const x = await streamTokensFor('x', xPrompt, 200);
 
       sendEvent('done', { linkedin, x });
     } catch (err: any) {

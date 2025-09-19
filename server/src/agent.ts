@@ -4,6 +4,14 @@ import OpenAI from "openai";
 
 function now() { return new Date().toISOString(); }
 
+// Shared instruction builder so all endpoints use the same prompt templates
+export function makeInstructions(searchResults: any[]) {
+  const system = `You are a helpful assistant that writes social media posts. Use the user prompt and the provided context from web search. Return strictly the LinkedIn post and X post.`;
+  const linkedinInstruction = `Write a professional LinkedIn post (250-300 words) with a clear structure, hashtags, and a call-to-action. Use the following context:\n${searchResults.map((r:any)=>r.title+": "+(r.snippet||'')).join('\n')}`;
+  const xInstruction = `Write a casual X/Twitter post under 280 characters that summarizes the idea and includes one or two hashtags.`;
+  return { system, linkedinInstruction, xInstruction };
+}
+
 export async function generatePosts(prompt: string, openaiKey: string | undefined, searchKey: string | undefined): Promise<GenerateResponse> {
   const log: AgentLogEntry[] = [];
 
@@ -22,12 +30,7 @@ export async function generatePosts(prompt: string, openaiKey: string | undefine
 
   log.push({ step: "Drafting", message: "Composing prompts for OpenAI model...", timestamp: now() });
 
-  const system = `You are a helpful assistant that writes social media posts. Use the user prompt and the provided context from web search. Return strictly the LinkedIn post and X post.`;
-
-  const linkedinInstruction = `Write a professional LinkedIn post (250-300 words) with a clear structure, hashtags, and a call-to-action. Use the following context:\n${searchResults.map((r:any)=>r.title+": "+(r.snippet||'')).join('\n')}`;
-
-  const xInstruction = `Write a casual X/Twitter post under 280 characters that summarizes the idea and includes one or two hashtags.`;
-
+  const { system, linkedinInstruction, xInstruction } = makeInstructions(searchResults);
   const userMessage = `User prompt: ${prompt}\n\nLinkedIn instruction:\n${linkedinInstruction}\n\nX instruction:\n${xInstruction}`;
 
   try {
@@ -74,7 +77,7 @@ export async function generateLinkedInText(prompt: string, openaiKey: string | u
   const profane = ['fuck','shit','bitch'];
   const lowered = prompt.toLowerCase();
   if (profane.some(p=>lowered.includes(p))) throw new Error('Prompt contains disallowed language');
-  const linkedinInstruction = `Write a professional LinkedIn post (250-300 words) with a clear structure, hashtags, and a call-to-action. Use the following context:\n${searchResults.map((r:any)=>r.title+": "+(r.snippet||'')).join('\n')}`;
+  const { linkedinInstruction } = makeInstructions(searchResults);
   // Ask the model to return a JSON object with a `linkedin` field only.
   const jsonPrompt = `${linkedinInstruction}\n\nIMPORTANT: Return ONLY valid JSON with a single key \"linkedin\" whose value is the post string. Do not include any extra text or explanation.`;
 
@@ -128,7 +131,7 @@ export async function generateLinkedInText(prompt: string, openaiKey: string | u
 
 export async function generateXText(prompt: string, openaiKey: string | undefined, searchResults: any[], systemPrompt: string) {
   const cfg = new OpenAI({ apiKey: openaiKey });
-  const xInstruction = `Write a casual X/Twitter post under 280 characters that summarizes the idea and includes one or two hashtags.`;
+  const { xInstruction } = makeInstructions(searchResults);
   // Ask model to return JSON with `x` key
   const jsonPrompt = `${xInstruction}\n\nIMPORTANT: Return ONLY valid JSON with a single key \"x\" whose value is the post string under 280 characters.`;
   const resp: any = await cfg.chat.completions.create({
