@@ -2,4 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial }
+/* Google Fonts: Merriweather for headings, Inter for UI */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Merriweather:wght@300;400;700&display=swap');
+
+:root{
+	--paper:#f7efe1; /* warm parchment */
+	--paper-2:#efe6d1;
+	--wood-brown:#5b3626;
+	--brass:#b28740;
+	--ink:#2b2b2b;
+	--muted:#6b5b4b;
+}
+
+@layer base {
+		body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; background: linear-gradient(180deg,var(--paper),var(--paper-2)); color:var(--ink); 
+			background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><rect fill='%23f7efe1' width='100%25' height='100%25'/><g opacity='0.03' fill='%23000000'><circle cx='60' cy='60' r='120'/><circle cx='320' cy='320' r='140'/></g></svg>"), radial-gradient(ellipse at center, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 50%);
+			background-blend-mode: multiply, normal; background-size: cover; }
+		.vintage-card { background: linear-gradient(180deg,#fbf6ec,#f0e7d2); border:1px solid rgba(91,54,38,0.12); box-shadow: 0 6px 18px rgba(43,43,43,0.08); border-radius:12px; padding:1rem; }
+		.emboss { font-weight:700; letter-spacing:0.6px; color:var(--wood-brown); text-shadow: 0 1px 0 #fff, 0 -1px 0 rgba(0,0,0,0.05); }
+		.wax-btn { background: linear-gradient(180deg,var(--wood-brown),#4a2d21); color: white; padding:0.5rem 1rem; border-radius:999px; box-shadow: 0 6px 0 rgba(0,0,0,0.08) inset; border:2px solid rgba(178,136,64,0.12); }
+		.parchment-panel { background: linear-gradient(180deg,#fcf6e8,#f7ecd4); border:1px solid rgba(91,54,38,0.06); padding:1rem; border-radius:8px; box-shadow: inset 0 20px 40px rgba(0,0,0,0.03); }
+		h1, h2, h3 { font-family: 'Merriweather', Georgia, serif; }
+		h1 { font-size: 1.9rem; }
+		h2 { font-size: 1.15rem; }
+}
+
+@layer utilities {
+	.book-cover { background: linear-gradient(180deg,#f2e7d0,#e9d9bf); border-radius:10px; border:1px solid rgba(0,0,0,0.06); padding:1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+
+	.text-muted { color: var(--muted); }
+
+	.site-footer { margin-top:2.5rem; padding-top:1rem; border-top:1px dashed rgba(91,54,38,0.06); font-size:0.9rem; color:var(--muted); }
+
+	.wax-btn-sm { background: linear-gradient(180deg,var(--wood-brown),#4a2d21); color: white; padding:0.45rem 0.9rem; border-radius:999px; font-size:0.95rem; }
+
+	textarea.vintage-card { padding:1rem; min-height:96px; }
+
+	/* Glassmorphism utility */
+	.glass { background: rgba(255,255,255,0.55); backdrop-filter: blur(6px) saturate(120%); border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 8px 30px rgba(11,11,11,0.08); }
+
+	/* Primary wax button with glow */
+	.wax-btn-primary { display:inline-flex; align-items:center; gap:0.5rem; background: linear-gradient(90deg,var(--brass), #f6c85f); color: #2b1f14; padding:0.6rem 1.15rem; border-radius: 0.6rem; font-weight:700; box-shadow: 0 10px 30px rgba(178,136,64,0.12); border: none; }
+
+	/* subtle vignette on container */
+	.vignette { position: relative; }
+	.vignette::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 120px 160px rgba(0,0,0,0.04); border-radius:12px; }
+}
+
+/* Keep Tailwind utilities available */

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import Logo from './assets/logo.svg'
 
 type LogEntry = { step: string; message: string; timestamp: string }
 
@@ -147,65 +148,91 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">PostAI — Social Post Generator</h1>
+        <header className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full book-cover flex items-center justify-center text-xl font-bold">
+                <img src={Logo} alt="PostAI" width={28} height={28} />
+              </div>
+            <div>
+              <h1 className="text-3xl emboss mb-0">PostAI</h1>
+              <div className="text-sm text-muted">Social post writer</div>
+            </div>
+          </div>
+          <div className="text-sm text-muted">v0.1</div>
+        </header>
 
         <div className="mb-4">
           <textarea value={prompt} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPrompt(e.target.value)} rows={4}
-            className="w-full p-3 border rounded" placeholder={"Example: Launching a new AI tool for social teams that automates caption writing and post scheduling — focus on productivity, ROI, and a call-to-action."} />
-          <div className="mt-2 flex gap-2">
-            <button onClick={handleGenerate} disabled={loading || !prompt}
-              className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50">{loading? 'Generating...' : 'Generate'}</button>
-            <button onClick={handleGenerateStream} disabled={loading || !prompt}
-              className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">Stream</button>
+            className="w-full p-4 vintage-card" placeholder={"Example: Launching a new AI tool for social teams that automates caption writing and post scheduling — focus on productivity, ROI, and a call-to-action."} />
+          <div className="mt-3 flex gap-3">
             <button onClick={handleGenerateTokenStream} disabled={loading || !prompt}
-              className="px-4 py-2 bg-orange-600 text-white rounded disabled:opacity-50">Stream Tokens</button>
+              className="wax-btn-primary glass vignette" aria-label="Generate post">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block mr-2" aria-hidden><path d="M5 12h14M12 5l7 7-7 7" stroke="#2b1f14" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {loading? 'Generating...' : 'Generate'}
+            </button>
             <button onClick={()=>{ setPrompt(''); setLinkedin(''); setXpost(''); setLog([]) }}
-              className="px-4 py-2 bg-gray-200 rounded">Reset</button>
+              className="px-4 py-2 bg-white border rounded text-sm" aria-label="Reset form">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="inline-block mr-2" aria-hidden><path d="M12 5v0M12 19v0M5 12h0M19 12h0" stroke="#333" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Reset
+            </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white p-4 rounded shadow">
+          <div className="book-cover p-4">
             <div className="flex justify-between items-start">
-              <h2 className="font-semibold">LinkedIn Post</h2>
-              <button onClick={()=>copy(linkedin)} className="text-sm text-blue-600">Copy</button>
+              <h2 className="emboss">LinkedIn Post</h2>
+              <button onClick={()=>copy(linkedin)} className="text-sm" style={{color:'var(--brass)'}} aria-label="Copy LinkedIn post">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M9 12h7v7H9z" stroke="#b28740" strokeWidth="1.2"/><path d="M7 7h10v10" stroke="#b28740" strokeWidth="1.2"/></svg>
+              </button>
             </div>
-            <div className="mt-2 text-sm text-gray-800">
+            <div className="mt-2 text-sm text-gray-800" aria-live="polite">
               {linkedin ? (
                 <div dangerouslySetInnerHTML={{ __html: mdBoldToHtml(linkedin) }} />
-              ) : 'No output yet'}
+              ) : <div className="text-muted">No output yet</div>}
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded shadow">
+          <div className="book-cover p-4">
             <div className="flex justify-between items-start">
-              <h2 className="font-semibold">X / Twitter Post</h2>
-              <button onClick={()=>copy(xpost)} className="text-sm text-blue-600">Copy</button>
+              <h2 className="emboss">X / Twitter Post</h2>
+              <button onClick={()=>copy(xpost)} className="text-sm" style={{color:'var(--brass)'}} aria-label="Copy X post">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M5 12c2 2 4 3 7 3 4 0 7-3 7-8 0-.2 0-.4 0-.6" stroke="#b28740" strokeWidth="1.2"/></svg>
+              </button>
             </div>
-            <div className="mt-2 text-sm text-gray-800">
+            <div className="mt-2 text-sm text-gray-800" aria-live="polite">
               {xpost ? (
                 <div dangerouslySetInnerHTML={{ __html: mdBoldToHtml(xpost) }} />
-              ) : 'No output yet'}
+              ) : <div className="text-muted">No output yet</div>}
             </div>
           </div>
         </div>
 
         <div className="mt-4">
-          <button onClick={()=>setShowLog(s=>!s)} className="text-sm text-gray-700">{showLog? 'Hide' : 'Show'} Agent Log</button>
+          <div className="flex justify-between items-center">
+            <button onClick={()=>setShowLog(s=>!s)} className="text-sm text-muted">{showLog? 'Hide' : 'Show'} Agent Log</button>
+          </div>
           {showLog && (
-            <div className="mt-2 bg-white p-3 rounded shadow max-h-64 overflow-auto text-xs">
-              {log.length===0 && <div className="text-gray-500">No log entries</div>}
+            <div className="mt-2 parchment-panel max-h-64 overflow-auto text-sm">
+              {log.length===0 && <div className="text-muted">No log entries</div>}
               {log.map((l, i)=>(
-                <div key={i} className="mb-2">
-                  <div className="font-mono text-xs text-gray-600">[{new Date(l.timestamp).toLocaleTimeString()}] {l.step}</div>
+                <div key={i} className="mb-3">
+                  <div className="font-mono text-xs text-muted">[{new Date(l.timestamp).toLocaleTimeString()}] {l.step}</div>
                   <div className="text-sm">{l.message}</div>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        <footer className="site-footer">
+          <div className="flex justify-between items-center">
+            <div>Made by Sarmad — <span className="emboss">PostAI</span></div>
+            <div className="text-sm text-muted">API powered by OpenAI</div>
+          </div>
+        </footer>
 
       </div>
     </div>
